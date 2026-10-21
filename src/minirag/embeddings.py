@@ -27,7 +27,16 @@ DEFAULT_BEDROCK_REGION = "us-east-1"
 
 
 class Embedder(Protocol):
-    """Anything that turns texts into L2-normalized vectors."""
+    """Anything that turns texts into L2-normalized vectors.
+
+    Contract shared by every implementation:
+
+    * returns a float32 matrix of shape ``(len(texts), dim)``;
+    * an empty batch gives shape ``(0, dim)``;
+    * a ``str`` instead of a sequence raises ``TypeError``;
+    * empty or whitespace-only text gives the zero vector (it never raises),
+      which scores 0 against everything in the vector store.
+    """
 
     def embed(self, texts: Sequence[str]) -> np.ndarray:
         ...
@@ -112,8 +121,6 @@ class BedrockEmbedder:
         return self._client
 
     def _embed_one(self, text: str) -> List[float]:
-        if not text.strip():
-            raise ValueError("cannot embed empty text")
         body = json.dumps(
             {"inputText": text, "dimensions": self.dimensions, "normalize": True}
         )
@@ -131,6 +138,11 @@ class BedrockEmbedder:
             raise TypeError("embed() expects a sequence of strings, not a single string")
         if len(texts) == 0:
             return np.zeros((0, self.dimensions), dtype=np.float32)
-        vectors = [self._embed_one(text) for text in texts]
+        # Blank texts follow the Embedder contract (zero vector, like
+        # FakeEmbedder) and are not sent to Bedrock, which rejects empty input.
+        matrix = np.zeros((len(texts), self.dimensions), dtype=np.float64)
+        for row, text in enumerate(texts):
+            if text.strip():
+                matrix[row] = self._embed_one(text)
         # Titan already normalizes; do it again so the contract never depends on it.
-        return _normalize(np.asarray(vectors, dtype=np.float64))
+        return _normalize(matrix)

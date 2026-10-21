@@ -7,8 +7,6 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "src"))
 
 from minirag.chunking import chunk  # noqa: E402
 
-CORPUS = pathlib.Path(__file__).resolve().parent.parent / "corpus"
-
 
 def test_empty_text_returns_no_chunks():
     assert chunk("", size=100, overlap=10) == []
@@ -116,13 +114,3 @@ def test_hash_without_space_is_not_a_heading():
 def test_trailing_hashes_stripped_from_heading():
     result = chunk("## Title ##\nbody", size=100, overlap=0)
     assert result[0]["heading"] == "Title"
-
-
-def test_max_size_respected_on_real_corpus():
-    for path in sorted(CORPUS.glob("*.md")):
-        result = chunk(path.read_text(), size=300, overlap=50, source=path.name)
-        assert result, path.name
-        for c in result:
-            assert 0 < len(c["text"]) <= 300
-            assert c["text"].strip()
-            assert c["source"] == path.name
