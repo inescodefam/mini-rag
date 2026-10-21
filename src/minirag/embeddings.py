@@ -23,7 +23,6 @@ import numpy as np
 _TOKEN_RE = re.compile(r"\w+", re.UNICODE)
 
 DEFAULT_BEDROCK_EMBED_MODEL_ID = "amazon.titan-embed-text-v2:0"
-DEFAULT_BEDROCK_REGION = "us-east-1"
 
 
 class Embedder(Protocol):
@@ -83,7 +82,7 @@ class BedrockEmbedder:
     Configuration (constructor args win over env vars):
 
     * model id: ``MINIRAG_EMBED_MODEL_ID`` (default Titan Text Embeddings V2)
-    * region: ``AWS_REGION`` / ``AWS_DEFAULT_REGION`` (default ``us-east-1``)
+    * region: ``AWS_REGION`` / ``AWS_DEFAULT_REGION`` (else the region from ``~/.aws/config``)
 
     Credentials come from the default AWS chain. The boto3 client is created
     lazily on the first ``embed`` call, so constructing this class needs no
@@ -108,8 +107,7 @@ class BedrockEmbedder:
             region_name
             or os.environ.get("AWS_REGION")
             or os.environ.get("AWS_DEFAULT_REGION")
-            or DEFAULT_BEDROCK_REGION
-        )
+        )  
         self.dimensions = dimensions
         self._client = client
 
