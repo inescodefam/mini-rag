@@ -24,6 +24,16 @@ _TOKEN_RE = re.compile(r"\w+", re.UNICODE)
 
 DEFAULT_BEDROCK_EMBED_MODEL_ID = "amazon.titan-embed-text-v2:0"
 
+# Very common English words carry no topic. Without dropping them, a question
+# like "What is the capital of Peru?" scores higher against the corpus than
+# real in-scope questions, purely through shared "what/is/the/of" tokens, and
+# no similarity threshold can separate in-scope from out-of-scope.
+STOP_WORDS = frozenset(
+    "a an the of to in on for and or is are was were be do does did how what "
+    "why who when which you your it its this that these those with as by at "
+    "from can i we they not if vs about into than then so such".split()
+)
+
 
 class Embedder(Protocol):
     """Anything that turns texts into L2-normalized vectors.
@@ -53,9 +63,10 @@ class FakeEmbedder:
 
     Each lowercase word is hashed (MD5, so results are stable across processes,
     unlike the built-in ``hash``) to one of ``dim`` buckets, with a hash-derived
-    sign to reduce collision bias. Texts that share words get a high cosine
-    score; texts with no shared words score near 0. A text with no word
-    characters embeds to the zero vector.
+    sign to reduce collision bias. Common English stop words (``STOP_WORDS``)
+    are ignored. Texts that share words get a high cosine score; texts with no
+    shared words score near 0. A text with no content words embeds to the zero
+    vector.
     """
 
     def __init__(self, dim: int = 512) -> None:
@@ -69,6 +80,8 @@ class FakeEmbedder:
         matrix = np.zeros((len(texts), self.dim), dtype=np.float64)
         for row, text in enumerate(texts):
             for token in _TOKEN_RE.findall(text.lower()):
+                if token in STOP_WORDS:
+                    continue
                 digest = hashlib.md5(token.encode("utf-8")).digest()
                 bucket = int.from_bytes(digest[:8], "big") % self.dim
                 sign = 1.0 if digest[8] % 2 == 0 else -1.0

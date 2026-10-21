@@ -21,9 +21,11 @@ from .llm import LLM
 from .store import VectorStore
 
 DEFAULT_K = 3
-# Placeholder, NOT tuned yet. With FakeEmbedder on the real corpus, in-scope and
-# out-of-scope questions score in overlapping ranges (shared stop words), so no
-# single value separates them cleanly. Tune in the eval step, and again for Bedrock.
+# Tuned for FakeEmbedder on the bundled corpus (see tests/test_retrieval.py and
+# tests/test_refusal.py): in-scope eval questions score >= ~0.26 on their best
+# chunk, out-of-scope ones <= ~0.19, so 0.2 sits in the gap. The gap is narrow,
+# and Titan embeddings score on a different scale: RE-TUNE for Bedrock
+# (e.g. via MINIRAG_THRESHOLD) before trusting refusals.
 DEFAULT_THRESHOLD = 0.2
 DEFAULT_CHUNK_SIZE = 800
 DEFAULT_CHUNK_OVERLAP = 100
