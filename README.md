@@ -25,6 +25,42 @@ pip install -r requirements.txt
 
 The corpus lives in `corpus/` (five flat `.md` files: `rag-basics.md`, `llm-safety.md`, `evaluation-performance.md`, `aws-infrastructure.md`, `delivery-operations.md`). That folder is listed in `.gitignore`, so a fresh clone will not have it. Copy the guides in, or point `MINIRAG_CORPUS_DIR` at any folder of `.md` files.
 
+## Add your own documents
+
+Put your files in `corpus/` (or in any folder and point `MINIRAG_CORPUS_DIR` at it). The format is plain Markdown:
+
+- **Extension and location:** `.md` files directly inside the folder. Subfolders and other extensions (`.txt`, `.pdf`) are ignored.
+- **Encoding:** UTF-8.
+- **Headings define sections.** Split your document with `#` headings (`# Title`, `## Section`). A chunk never crosses a heading, and each answer cites `file.md#Heading`, so use clear, specific headings. Text before the first heading is cited as just `file.md`. A `#` line inside a fenced code block is not treated as a heading.
+- **File names are citations.** Give each file a unique, descriptive name (`refund-policy.md`, not `notes.md`).
+- **Length:** long sections are cut into 800-character chunks with 100 characters of overlap, so write one idea per section.
+
+Example `corpus/pets.md`:
+
+```markdown
+# Pets
+
+## Feeding
+Cats eat twice a day. Dogs need walks.
+
+## Vet
+Vaccination is yearly.
+```
+
+Test it (no AWS needed). The corpus is read once at startup, so restart the API after adding files.
+
+```bash
+# In scope: the answer should cite pets.md#Feeding
+PYTHONPATH=src python -m minirag.cli --offline --corpus corpus "How often do cats eat?"
+
+# Out of scope: should print "I don't know based on the provided documents."
+PYTHONPATH=src python -m minirag.cli --offline "What is the capital of Peru?"
+```
+
+In offline mode the printed "answer" is the prompt, and retrieval matches shared words, not meaning. Check that the `Sources:` list shows the section you expected. If good questions are refused, lower `--threshold` (default 0.2). The default was tuned on the bundled guides, so re-check it for your own documents.
+
+The bundled tests (`python -m pytest`) check retrieval against the five bundled guides. If you replace them with your own files, `test_retrieval.py` will fail. To keep it working, leave the bundled guides in `corpus/` and use `MINIRAG_CORPUS_DIR` for your own folder. To test your own documents, add `(question, (file, heading))` entries to `EVAL_SET` in `tests/test_retrieval.py`.
+
 ## Run the tests
 
 No AWS credentials needed. Tests use `FakeEmbedder` and `StubLLM`.
