@@ -26,6 +26,9 @@ DEFAULT_K = 3
 # chunk, out-of-scope ones <= ~0.19, so 0.2 sits in the gap. The gap is narrow,
 # and Titan embeddings score on a different scale: RE-TUNE for Bedrock
 # (e.g. via MINIRAG_THRESHOLD) before trusting refusals.
+# Measured with Titan v2 (scripts/compare_recall.py): in-scope best chunk
+# >= ~0.41, out-of-scope <= ~0.11, so 0.2 also works there, but ~0.25 would
+# sit more centrally in that gap. Only 3 + 3 questions: treat as a rough guide.
 DEFAULT_THRESHOLD = 0.2
 DEFAULT_CHUNK_SIZE = 800
 DEFAULT_CHUNK_OVERLAP = 100
