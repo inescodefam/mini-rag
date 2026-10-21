@@ -6,7 +6,7 @@ import pytest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "src"))
 
-from minirag.llm import BedrockLLM, StubLLM  # noqa: E402
+from minirag.llm import DEFAULT_BEDROCK_LLM_MODEL_ID, BedrockLLM, StubLLM  # noqa: E402
 from minirag.rag import (  # noqa: E402
     REFUSAL_MESSAGE,
     answer,
@@ -156,10 +156,15 @@ def test_bedrock_llm_uses_converse_with_system_prompt():
     assert client.kwargs["inferenceConfig"]["temperature"] == 0.0
 
 
-def test_bedrock_llm_requires_a_model_id(monkeypatch):
+def test_bedrock_llm_falls_back_to_default_model_id(monkeypatch):
     monkeypatch.delenv("MINIRAG_LLM_MODEL_ID", raising=False)
-    with pytest.raises(ValueError):
-        BedrockLLM()
+    assert BedrockLLM().model_id == DEFAULT_BEDROCK_LLM_MODEL_ID
+
+
+def test_bedrock_llm_model_id_precedence(monkeypatch):
+    monkeypatch.setenv("MINIRAG_LLM_MODEL_ID", "env-model")
+    assert BedrockLLM(model_id="arg-model").model_id == "arg-model"
+    assert BedrockLLM().model_id == "env-model"
 
 
 def test_bedrock_llm_reads_env_without_creating_a_client(monkeypatch):

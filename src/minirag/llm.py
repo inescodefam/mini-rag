@@ -13,7 +13,7 @@ import os
 from typing import Any, List, Optional, Protocol, Tuple
 
 # Newer Claude models on Bedrock are invoked through a cross-region inference
-# profile id (the "us." prefix). Override with MINIRAG_LLM_MODEL_ID.
+# profile id (the "eu." prefix here). Override with MINIRAG_LLM_MODEL_ID.
 DEFAULT_BEDROCK_LLM_MODEL_ID = "eu.anthropic.claude-haiku-4-5-20251001-v1:0"
 DEFAULT_BEDROCK_REGION = "eu-north-1"
 
@@ -46,8 +46,8 @@ class BedrockLLM:
 
     Configuration (constructor args win over env vars):
 
-    * model id: ``MINIRAG_LLM_MODEL_ID``
-    * region: ``AWS_REGION`` / ``AWS_DEFAULT_REGION`` (default ``us-east-1``) 
+    * model id: ``MINIRAG_LLM_MODEL_ID`` (default ``DEFAULT_BEDROCK_LLM_MODEL_ID``)
+    * region: ``AWS_REGION`` / ``AWS_DEFAULT_REGION`` (default ``DEFAULT_BEDROCK_REGION``)
 
     The boto3 client is created lazily on the first call, so constructing this
     class needs no credentials. Pass ``client`` to inject a client in tests.
