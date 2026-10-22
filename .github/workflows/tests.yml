@@ -19,7 +19,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: pip install -r requirements.txt
-      - run: python -m pytest
+      - name: Run tests (offline: fake embedder + stub LLM, no AWS credentials)
+        env:
+          MINIRAG_OFFLINE: "1"
+        run: python -m pytest
 
   docker:
     runs-on: ubuntu-latest
