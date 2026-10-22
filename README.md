@@ -1,8 +1,6 @@
 # mini-rag
 
 A small retrieval-augmented generation (RAG) pipeline over five Markdown guides: heading-aware chunking, embeddings, an in-memory numpy vector store, a similarity threshold that makes it refuse out-of-scope questions, and a grounded prompt with citations. It ships with a FastAPI endpoint (`POST /ask`) and a CLI.
-<img width="848" height="520" alt="image" src="https://github.com/user-attachments/assets/d58900a6-1a57-4f81-b185-b72e218d15bb" />
-
 
 Design notes and the honest limits of the evaluation are in [explain.md](explain.md).
 
@@ -15,17 +13,21 @@ Design notes and the honest limits of the evaluation are in [explain.md](explain
 
 In offline mode the "answer" is the full prompt sent to the LLM, not a real answer. Retrieval in offline mode matches words, not meaning.
 
+## Demo
+
+<img width="848" height="520" alt="mini-rag answering a question in the terminal" src="https://github.com/user-attachments/assets/d58900a6-1a57-4f81-b185-b72e218d15bb" />
+
 ## Setup
 
-Requires Python 3.9+.
+Requires Python 3.10 to 3.12 (CI runs all three). The pinned `numpy` does not support 3.13 or newer, and `boto3` has dropped 3.9.
 
 ```bash
-python3 -m venv .venv
+python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-The corpus lives in `corpus/` (five flat `.md` files: `rag-basics.md`, `llm-safety.md`, `evaluation-performance.md`, `aws-infrastructure.md`, `delivery-operations.md`). That folder is listed in `.gitignore`, so a fresh clone will not have it. Copy the guides in, or point `MINIRAG_CORPUS_DIR` at any folder of `.md` files.
+The corpus lives in `corpus/` (five flat `.md` files: `rag-basics.md`, `llm-safety.md`, `evaluation-performance.md`, `aws-infrastructure.md`, `delivery-operations.md`) and is included in the repo, so a fresh clone works out of the box. To use other documents, add files to `corpus/` or point `MINIRAG_CORPUS_DIR` at any folder of `.md` files.
 
 ## Add your own documents
 
@@ -113,6 +115,30 @@ Response (the answer text and score are illustrative):
 
 For a refused question, `answer` is `"I don't know based on the provided documents."`, `sources` is empty, `refused` is `true`, and the LLM is never called. `GET /health` returns `{"status": "ok"}`. The corpus is ingested once at startup. A model or embedding failure returns HTTP 502 with a generic message (no provider details). Questions are limited to 2000 characters.
 
+## Run with Docker
+
+The image defaults to offline mode (fake embeddings, stub LLM), so it runs without AWS and costs nothing.
+
+```bash
+docker build -t mini-rag .
+docker run --rm -p 127.0.0.1:8000:8000 mini-rag
+curl -s localhost:8000/health
+```
+
+For real answers, switch to Bedrock and give the container credentials at run time. Never copy credentials into the image.
+
+```bash
+docker run --rm -p 127.0.0.1:8000:8000 \
+  -e MINIRAG_OFFLINE=0 -e AWS_REGION=eu-north-1 -e AWS_PROFILE=mini-rag \
+  -v ~/.aws:/home/appuser/.aws:ro mini-rag
+```
+
+Publish the port on `127.0.0.1` as shown. `/ask` has no authentication or rate limit, so exposing it publicly on your AWS account would let anyone run up your Bedrock bill.
+
+## Continuous integration
+
+GitHub Actions (`.github/workflows/tests.yml`) runs the test suite on Python 3.10, 3.11 and 3.12, and builds the Docker image and smoke-tests it, on every push and pull request. Tests use the fake embedder and stub LLM, so CI needs no AWS credentials.
+
 ## Configuration
 
 All settings are environment variables. No keys appear in code.
@@ -145,7 +171,7 @@ This runs the 3-question eval set (recall@3) and the 3 out-of-scope questions wi
 ## Layout
 
 ```
-corpus/                 # the 5 guides (gitignored)
+corpus/                 # the 5 guides
 src/minirag/
   chunking.py           # chunk(text, size, overlap), heading-aware
   embeddings.py         # FakeEmbedder, BedrockEmbedder

@@ -1,0 +1,42 @@
+name: tests
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t mini-rag .
+      - name: Smoke test the container (offline mode, no AWS)
+        run: |
+          docker run -d --name mini-rag -p 8000:8000 mini-rag
+          for i in $(seq 1 20); do
+            curl -sf localhost:8000/health && break
+            sleep 1
+          done
+          curl -sf localhost:8000/health
+          curl -sf localhost:8000/ask -H 'content-type: application/json' \
+            -d '{"question": "Why is an IAM role better than access keys?"}' | grep -q '"refused":false'
+          curl -sf localhost:8000/ask -H 'content-type: application/json' \
+            -d '{"question": "What is the capital of Peru?"}' | grep -q '"refused":true'
+      - if: failure()
+        run: docker logs mini-rag

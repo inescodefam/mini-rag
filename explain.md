@@ -47,9 +47,9 @@ The score scale differs per embedder, so the threshold of 0.2 is not portable. I
 - **One-text-per-request embedding.** Titan takes one text per call, so ingesting is 75 sequential calls on every startup. Embeddings are not cached or persisted.
 - **Everything in memory.** The store is rebuilt at startup and lost on exit. Nothing is incremental.
 - **No conversation memory.** Each question is independent.
-- **Python 3.9.** The virtualenv here is on 3.9, which boto3 has announced it will stop supporting. Use 3.10 or later for anything beyond this exercise.
+- **Python version range.** Developed on Python 3.12 and tested in CI on 3.10, 3.11 and 3.12. Python 3.9 is not supported (boto3 dropped it), and 3.13 or newer needs a newer `numpy` than the pinned 2.0.2.
 - **Prompt-injection defenses are partial.** Delimiting, tag neutralization, and instructions reduce the risk. They do not prevent a model from following injected text. Treat them as one layer.
-- **The corpus folder is gitignored.** The repo does not carry the five guides. Copy them in before running.
+- **The bundled tests are tied to the bundled corpus.** `tests/test_retrieval.py` expects the five guides in `corpus/`. If you replace them with your own files, update `EVAL_SET`.
 
 ## What I would change for production
 
