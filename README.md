@@ -1,6 +1,8 @@
 # mini-rag
 
 A small retrieval-augmented generation (RAG) pipeline over five Markdown guides: heading-aware chunking, embeddings, an in-memory numpy vector store, a similarity threshold that makes it refuse out-of-scope questions, and a grounded prompt with citations. It ships with a FastAPI endpoint (`POST /ask`) and a CLI.
+<img width="848" height="520" alt="image" src="https://github.com/user-attachments/assets/d58900a6-1a57-4f81-b185-b72e218d15bb" />
+
 
 Design notes and the honest limits of the evaluation are in [explain.md](explain.md).
 
